@@ -7,8 +7,8 @@ from util import dataset
 from dataencoders import CharEnc, charMapList
 
 samples_size  = 1
-length        = 15
-nb_epoch      = 400
+length        = 4
+nb_epoch      = 1000
 
 embedding_dim = 10
 hidden_dim    = embedding_dim
@@ -23,14 +23,15 @@ def model(in_shape, out_shape, **kwargs):
   # m.add(Activation('tanh'))
 
   m.add(LSTM(
-      output_dim = in_shape[-1]
-    , input_dim  = in_shape[-1]
-    , input_length = in_shape[0]
+      output_dim  = in_shape[-1]
+    , input_shape = in_shape
+    # , input_dim  = in_shape[-1]
+    # , input_length = in_shape[0]
     , return_sequences = True
     , **kwargs))
 
-  # m.add(TimeDistributed(Dense(out_shape[-1])))
-  # m.add(Activation('tanh'))
+  m.add(TimeDistributed(Dense(out_shape[-1])))
+  m.add(Activation('softmax'))
 
   m.compile(loss='categorical_crossentropy', optimizer='adam')
 
