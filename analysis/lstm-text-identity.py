@@ -7,7 +7,7 @@ from util import dataset
 from dataencoders import CharEnc, charMapList
 
 samples_size  = 1
-length        = 4
+length        = 15
 nb_epoch      = 1000
 
 embedding_dim = 10
@@ -28,10 +28,11 @@ def model(in_shape, out_shape, **kwargs):
     # , input_dim  = in_shape[-1]
     # , input_length = in_shape[0]
     , return_sequences = True
+    , activation = 'softmax'
     , **kwargs))
 
-  m.add(TimeDistributed(Dense(out_shape[-1])))
-  m.add(Activation('softmax'))
+  # m.add(TimeDistributed(Dense(out_shape[-1])))
+  # m.add(Activation('softmax'))
 
   m.compile(loss='categorical_crossentropy', optimizer='adam')
 
@@ -40,7 +41,7 @@ def model(in_shape, out_shape, **kwargs):
 
 def _test():
   # Load data
-  sentences = ['ABAB']#dataset.loadLines(dataset.BareSentencesPath)
+  sentences = ['ABGLDJTMBLDTYGA']#dataset.loadLines(dataset.BareSentencesPath)
   converter = CharEnc(charMapList(sentences), length)
   X         = converter.textToOneHot(sentences)
 
