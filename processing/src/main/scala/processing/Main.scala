@@ -10,6 +10,11 @@ object Main extends App {
   val enDev     = englishDir.resolve("en-ud-dev.conllu")
   val enDevProc = processedDir.resolve("en-ud.dev.txt")
 
+  val allowedCharsSet = Set('.', ',', ' ')
+
+  def allowedChars(c: Char): Boolean =
+    c.isLetter || c.isDigit || allowedCharsSet(c)
+
   def converter(from: Path, to: Path): Stream[Task, Unit] =
     io.file.readAll[Task](from, 4096)
       .through(text.utf8Decode)
@@ -17,7 +22,7 @@ object Main extends App {
       .map { line =>
         val elems = line.split("\\s")
         if (elems.length < 2) None
-        else Some(elems(1))
+        else Some(elems(1).toLowerCase.filter(allowedChars))
       }
       .split(_.isEmpty)
       .map { _
