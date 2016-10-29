@@ -28,7 +28,7 @@ def many_strings(which):
   print("Loading the data")
   sentences = dataset.loadLines(dataset.BareSentencesPath)
   print("Loaded")
-  strings_identity(which, nb_epoch=50, sentences=sentences)
+  strings_identity(which, nb_epoch=25, sentences=sentences)
 
 
 # Config

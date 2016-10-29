@@ -14,7 +14,7 @@ def model(layers):
   for l in layers:
     m.add(l)
 
-  m.compile(loss='categorical_crossentropy', optimizer='adam')
+  m.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
   print(m.summary())
   return m
@@ -36,14 +36,26 @@ def dense_first(**kwargs):
   return TimeDistributed(Dense(**kwargs), input_shape=input_shape)
 def dense(**kwargs): return TimeDistributed(Dense(**kwargs))
 
-def strings_identity(layer, sentences=['ABGLDJTMBLDTYGA'], nb_epoch=1000, **kwargs):
+def strings_identity(layer, sentences, nb_epoch=1000, test_and_valid_size=[0.15, 0.15], **kwargs):
   length = len(max(sentences, key=len))
   print("Sentences size:", len(sentences))
   print("Max length:", length)
 
   # Load data
   converter = CharEnc(charMapList(sentences), length)
-  X         = converter.textToOneHot(sentences)
+  all_data  = converter.textToOneHot(sentences)
+  np.random.shuffle(all_data)
+
+  valid_size = int(test_and_valid_size[0] * len(all_data))
+  test_size  = int(test_and_valid_size[1] * len(all_data))
+
+  X_test  = all_data[:test_size]
+  X_valid = all_data[test_size : test_size + valid_size]
+  X_train = all_data[test_size + valid_size:]
+
+  print("Test size:", test_size)
+  print("Validation size:", valid_size)
+  print("Train size", len(X_train))
 
   # Define the model
   input_shape = (length, converter.embeddingLen)
@@ -51,22 +63,25 @@ def strings_identity(layer, sentences=['ABGLDJTMBLDTYGA'], nb_epoch=1000, **kwar
   m = one_layer_categorical(layer, **dict(kwargs, input_shape=input_shape, output_dim=output_dim))
 
   # Train the model
-  m.fit(X, X, nb_epoch=nb_epoch)
-  
+  m.fit(X_train, X_train
+  , nb_epoch=nb_epoch
+  , validation_data=(X_valid, X_valid)
+  , batch_size=64)
+
   # Metrics
-  y = m.predict(X)
+  y = m.predict(X_test)
 
   def flatten(x):
     x_flat = converter.oneHotToId(x)
     return x_flat.reshape(x_flat.size)
     
-  X_flat = flatten(X)
+  X_flat = flatten(X_test)
   y_flat = flatten(y)
 
   # Sample
   print(converter.charMap)
-  print(converter.oneHotToText(X[:1]), converter.oneHotToId(X[:1]))
-  print(converter.oneHotToText(y[:1]), converter.oneHotToId(y[:1]))
+  print(converter.oneHotToText(X_test[:10]))
+  print(converter.oneHotToText(y[:10]))
 
   # Accuracy
-  print("Accuracy", accuracy_score(X_flat, y_flat))
+  print("Test Accuracy", accuracy_score(X_flat, y_flat))
