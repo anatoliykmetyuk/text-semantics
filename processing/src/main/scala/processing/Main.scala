@@ -7,15 +7,17 @@ object Main extends App {
   val englishDir   = Paths.get("../data/Universal Dependencies 1.3/ud-treebanks-v1.3/UD_English")
   val processedDir = Paths.get("../data/processed/")
   
-  val enDev     = englishDir.resolve("en-ud-dev.conllu")
-  val enDevProc = processedDir.resolve("en-ud.dev.txt")
+  val enDev   = englishDir  .resolve("en-ud-dev.conllu")
+  val enTest  = englishDir  .resolve("en-ud-test.conllu")
+  val enTrain = englishDir  .resolve("en-ud-train.conllu")
+  val enProc  = processedDir.resolve("en-ud.txt")
 
   val allowedCharsSet = Set('.', ',', ' ')
 
   def allowedChars(c: Char): Boolean =
     c.isLetter || c.isDigit || allowedCharsSet(c)
 
-  def converter(from: Path, to: Path): Stream[Task, Unit] =
+  def converter(from: Path): Stream[Task, String] =
     io.file.readAll[Task](from, 4096)
       .through(text.utf8Decode)
       .through(text.lines)
@@ -33,9 +35,15 @@ object Main extends App {
         .trim
       }
       .intersperse("\n")
-      .through(text.utf8Encode)
-      .through(io.file.writeAll(to))
 
-  // if (!Files.exists(enDevProc)) Files.createFile(enDevProc)
-  converter(enDev, enDevProc).run.unsafeRun
+  def write(to: Path): Stream[Task, String] => Stream[Task, Unit] = _
+    .through(text.utf8Encode)
+    .through(io.file.writeAll(to))
+
+  implicit val s = fs2.Strategy.fromFixedDaemonPool(8, threadName = "worker")
+  converter(enTrain)
+    .merge(converter(enDev))
+    .merge(converter(enTest))
+    .through(write(enProc))
+    .run.unsafeRun
 }
